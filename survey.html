@@ -26,7 +26,7 @@
     <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-    <link rel="stylesheet" href="/styles.css?v=20260626-logo">
+    <link rel="stylesheet" href="/styles.css?v=20260626-choice-groups">
     <script defer src="/city-config.js?v=20260626-subdomain-route"></script>
   </head>
   <body>
@@ -129,21 +129,61 @@
 
           <fieldset>
             <legend>The three questions</legend>
-            <label>
-              <span class="label-text">1. How do you currently use AI for your business, if at all?</span>
-              <span class="label-hint">ChatGPT, Gemini, Canva AI, ad tools, chatbots, scheduling tools, or no current use.</span>
-              <textarea name="Current AI use"></textarea>
-            </label>
-            <label>
-              <span class="label-text">2. What is the biggest pain point in your business right now?</span>
-              <span class="label-hint">Marketing, research, scheduling, buying, customer follow-up, staffing, admin, website updates, reviews, quotes, reporting.</span>
-              <textarea name="Main pain point"></textarea>
-            </label>
-            <label>
-              <span class="label-text">3. What should be possible with AI for your business right now that is not in place?</span>
-              <span class="label-hint">Automated blogging/social, quote follow-up, payroll prep, buying/vendor research, customer calls, appointment reminders, review requests.</span>
-              <textarea name="Desired AI possibility"></textarea>
-            </label>
+            <div class="question-group" data-required-choice data-question-title="Current AI use">
+              <p class="label-text" id="current-ai-use-label">1. How do you currently use AI for your business, if at all?</p>
+              <div class="choice-grid" role="group" aria-labelledby="current-ai-use-label">
+                <label><input name="Current AI use" type="checkbox" value="ChatGPT"> ChatGPT</label>
+                <label><input name="Current AI use" type="checkbox" value="Gemini"> Gemini</label>
+                <label><input name="Current AI use" type="checkbox" value="Canva AI"> Canva AI</label>
+                <label><input name="Current AI use" type="checkbox" value="Ad tools"> Ad tools</label>
+                <label><input name="Current AI use" type="checkbox" value="Chatbots"> Chatbots</label>
+                <label><input name="Current AI use" type="checkbox" value="Scheduling tools"> Scheduling tools</label>
+                <label><input name="Current AI use" type="checkbox" value="No current use"> No current use</label>
+              </div>
+              <label class="custom-answer">
+                <span class="label-text">Custom answer</span>
+                <textarea name="Current AI use - Custom" data-custom-choice placeholder="Add another tool or a plain-English note."></textarea>
+              </label>
+              <p class="choice-error" data-choice-error aria-live="polite"></p>
+            </div>
+            <div class="question-group" data-required-choice data-question-title="Main pain point">
+              <p class="label-text" id="main-pain-point-label">2. What is the biggest pain point in your business right now?</p>
+              <div class="choice-grid" role="group" aria-labelledby="main-pain-point-label">
+                <label><input name="Main pain point" type="checkbox" value="Marketing"> Marketing</label>
+                <label><input name="Main pain point" type="checkbox" value="Research"> Research</label>
+                <label><input name="Main pain point" type="checkbox" value="Scheduling"> Scheduling</label>
+                <label><input name="Main pain point" type="checkbox" value="Buying"> Buying</label>
+                <label><input name="Main pain point" type="checkbox" value="Customer follow-up"> Customer follow-up</label>
+                <label><input name="Main pain point" type="checkbox" value="Staffing"> Staffing</label>
+                <label><input name="Main pain point" type="checkbox" value="Admin"> Admin</label>
+                <label><input name="Main pain point" type="checkbox" value="Website updates"> Website updates</label>
+                <label><input name="Main pain point" type="checkbox" value="Reviews"> Reviews</label>
+                <label><input name="Main pain point" type="checkbox" value="Quotes"> Quotes</label>
+                <label><input name="Main pain point" type="checkbox" value="Reporting"> Reporting</label>
+              </div>
+              <label class="custom-answer">
+                <span class="label-text">Custom answer</span>
+                <textarea name="Main pain point - Custom" data-custom-choice placeholder="Add another pain point or context."></textarea>
+              </label>
+              <p class="choice-error" data-choice-error aria-live="polite"></p>
+            </div>
+            <div class="question-group" data-required-choice data-question-title="Desired AI possibility">
+              <p class="label-text" id="desired-ai-possibility-label">3. What should be possible with AI for your business right now that is not in place?</p>
+              <div class="choice-grid" role="group" aria-labelledby="desired-ai-possibility-label">
+                <label><input name="Desired AI possibility" type="checkbox" value="Automated blogging/social"> Automated blogging/social</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Quote follow-up"> Quote follow-up</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Payroll prep"> Payroll prep</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Buying/vendor research"> Buying/vendor research</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Customer calls"> Customer calls</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Appointment reminders"> Appointment reminders</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Review requests"> Review requests</label>
+              </div>
+              <label class="custom-answer">
+                <span class="label-text">Custom answer</span>
+                <textarea name="Desired AI possibility - Custom" data-custom-choice placeholder="Add another possible AI fix."></textarea>
+              </label>
+              <p class="choice-error" data-choice-error aria-live="polite"></p>
+            </div>
           </fieldset>
 
           <fieldset class="optional-details" hidden data-detail-section>
@@ -213,6 +253,6 @@
       <span>AI Usage</span>
       <span>Practical AI systems for small business.</span>
     </footer>
-    <script src="/survey.js?v=20260626-analytics"></script>
+    <script src="/survey.js?v=20260626-choice-groups"></script>
   </body>
 </html>

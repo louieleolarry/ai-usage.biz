@@ -5,6 +5,7 @@ const detailSections = document.querySelectorAll("[data-detail-section]");
 const copyResponsesButton = document.querySelector("[data-copy-responses]");
 const responseCopyStatus = document.querySelector("[data-response-copy-status]");
 const surveyForm = document.querySelector(".survey-form");
+const requiredChoiceGroups = document.querySelectorAll("[data-required-choice]");
 
 const trackEvent = (eventName, parameters = {}) => {
   window.dataLayer = window.dataLayer || [];
@@ -78,6 +79,46 @@ const getFormSummary = () => {
   return `${lines.join("\n")}\n`;
 };
 
+const isChoiceGroupComplete = (group) => {
+  const hasCheckedOption = Boolean(group.querySelector('input[type="checkbox"]:checked'));
+  const customAnswer = group.querySelector("[data-custom-choice]");
+
+  return hasCheckedOption || Boolean(customAnswer?.value.trim());
+};
+
+const validateRequiredChoiceGroup = (group) => {
+  const isComplete = isChoiceGroupComplete(group);
+  const error = group.querySelector("[data-choice-error]");
+  const questionTitle = group.dataset.questionTitle || "This question";
+
+  group.classList.toggle("is-invalid", !isComplete);
+
+  if (error) {
+    error.textContent = isComplete ? "" : `${questionTitle} needs at least one selected option or a custom answer.`;
+  }
+
+  return isComplete;
+};
+
+const validateRequiredChoices = ({ focusFirstInvalid = false } = {}) => {
+  let firstInvalidGroup = null;
+
+  requiredChoiceGroups.forEach((group) => {
+    const isComplete = validateRequiredChoiceGroup(group);
+
+    if (!isComplete && !firstInvalidGroup) {
+      firstInvalidGroup = group;
+    }
+  });
+
+  if (firstInvalidGroup && focusFirstInvalid) {
+    firstInvalidGroup.scrollIntoView({ block: "center", behavior: "smooth" });
+    firstInvalidGroup.querySelector("input, textarea")?.focus({ preventScroll: true });
+  }
+
+  return !firstInvalidGroup;
+};
+
 if (copyButton && copyStatus) {
   copyButton.addEventListener("click", async () => {
     try {
@@ -119,8 +160,19 @@ if (copyResponsesButton && responseCopyStatus) {
   });
 }
 
+requiredChoiceGroups.forEach((group) => {
+  group.addEventListener("change", () => validateRequiredChoiceGroup(group));
+  group.addEventListener("input", () => validateRequiredChoiceGroup(group));
+});
+
 if (surveyForm) {
-  surveyForm.addEventListener("submit", () => {
+  surveyForm.addEventListener("submit", (event) => {
+    if (!validateRequiredChoices({ focusFirstInvalid: true })) {
+      event.preventDefault();
+      trackEvent("survey_required_choice_error");
+      return;
+    }
+
     trackEvent("survey_mailto_submit");
   });
 }
