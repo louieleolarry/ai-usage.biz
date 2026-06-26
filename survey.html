@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Usage Survey | Three-Question Small Business Snapshot</title>
+    <meta name="description" content="A short survey for small business owners to identify AI, marketing, research, scheduling, buying, website, and operations pain points.">
+    <!-- Google Tag Manager -->
+    <script>
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-K6VQCBM9');
+    </script>
+    <!-- End Google Tag Manager -->
+    <!-- GA4 fallback while GTM malware scanner false-positive is active -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BFD8D7EE6M"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-BFD8D7EE6M');
+    </script>
+    <link rel="canonical" href="https://ai-usage.biz/survey">
+    <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+    <link rel="stylesheet" href="/styles.css?v=20260626-logo">
+    <script defer src="/city-config.js?v=20260626-subdomain-route"></script>
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K6VQCBM9" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="AI Usage home">
+        <img class="brand-mark" src="/assets/brand/ai-usage-logo.png" alt="" width="48" height="48">
+        <span>AI Usage</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/#snapshot">Snapshot</a>
+        <a href="/#packages">Packages</a>
+        <span data-city-nav></span>
+        <a href="/survey">Survey</a>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="survey-hero">
+        <div>
+          <p class="eyebrow">Three-question owner survey</p>
+          <h1>Find the first useful AI fix.</h1>
+          <p class="lede">
+            Five minutes, plain English, no technical homework. The goal is to
+            spot where AI-assisted systems could save time on marketing,
+            research, scheduling, buying, follow-up, websites, or daily admin.
+          </p>
+        </div>
+        <aside class="signal-panel">
+          <h2>Street pitch</h2>
+          <p>
+            Can I have a minute of your time to ask three quick questions that
+            could save you hours and hours?
+          </p>
+          <button class="button primary" type="button" data-copy-survey>Copy street script</button>
+          <p class="copy-status" data-copy-status aria-live="polite"></p>
+        </aside>
+      </section>
+
+      <section class="section muted" id="survey">
+        <div class="section-heading">
+          <p class="eyebrow">Default: 3 questions</p>
+          <h2>Small business AI snapshot</h2>
+          <p class="section-intro">
+            Short answers are enough. If the owner is open to sharing more, turn
+            on the detail switch and capture the follow-up context for a Rancho
+            Web Designs offer.
+          </p>
+        </div>
+
+        <form class="survey-form" action="mailto:hello@ai-usage.biz" method="post" enctype="text/plain">
+          <fieldset class="survey-mode">
+            <legend>Survey length</legend>
+            <label class="toggle-row">
+              <span>
+                <span class="label-text">Owner is willing to share more detail</span>
+                <span class="label-hint">Leave this off for the quick street version. Turn it on for pricing, website, computer-use, and tool questions.</span>
+              </span>
+              <span class="detail-switch">
+                <input name="Share more detail" type="checkbox" value="Yes" role="switch" aria-checked="false" data-detail-toggle>
+                <span class="detail-switch-track" aria-hidden="true">
+                  <span class="detail-switch-option">3 questions</span>
+                  <span class="detail-switch-option">More detail</span>
+                  <span class="detail-switch-thumb"></span>
+                </span>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Contact basics</legend>
+            <div class="form-grid">
+              <label>
+                <span class="label-text">Business name</span>
+              <input name="Business name" type="text" autocomplete="organization">
+              </label>
+              <label>
+                <span class="label-text">Website</span>
+                <input name="Website" type="url" placeholder="https://">
+              </label>
+              <label class="full-span">
+                <span class="label-text">Best contact email</span>
+                <input name="Email" type="email" autocomplete="email">
+              </label>
+              <label class="full-span">
+                <span class="label-text">Permission to send a short one-page snapshot?</span>
+                <select name="Follow-up permission">
+                  <option value="">Choose one</option>
+                  <option>Yes, send a snapshot</option>
+                  <option>Maybe, ask first</option>
+                  <option>No follow-up for now</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>The three questions</legend>
+            <label>
+              <span class="label-text">1. How do you currently use AI for your business, if at all?</span>
+              <span class="label-hint">ChatGPT, Gemini, Canva AI, ad tools, chatbots, scheduling tools, or no current use.</span>
+              <textarea name="Current AI use"></textarea>
+            </label>
+            <label>
+              <span class="label-text">2. What is the biggest pain point in your business right now?</span>
+              <span class="label-hint">Marketing, research, scheduling, buying, customer follow-up, staffing, admin, website updates, reviews, quotes, reporting.</span>
+              <textarea name="Main pain point"></textarea>
+            </label>
+            <label>
+              <span class="label-text">3. What should be possible with AI for your business right now that is not in place?</span>
+              <span class="label-hint">Automated blogging/social, quote follow-up, payroll prep, buying/vendor research, customer calls, appointment reminders, review requests.</span>
+              <textarea name="Desired AI possibility"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset class="optional-details" hidden data-detail-section>
+            <legend>More detail</legend>
+            <label>
+              <span class="label-text">What do you regularly use your computer for?</span>
+              <span class="label-hint">Email, scheduling, bookkeeping, POS, payroll, ordering, marketing, documents, inventory, CRM, website updates.</span>
+              <textarea name="Computer use"></textarea>
+            </label>
+            <label>
+              <span class="label-text">If your main pain point were fixed, what would you be willing to pay?</span>
+              <span class="label-hint">Monthly or one-time range is fine. This is just to understand whether the fix is worth building.</span>
+              <textarea name="Willingness to pay"></textarea>
+            </label>
+            <label>
+              <span class="label-text">Which marketing tools do you use regularly, and what do you like or dislike?</span>
+              <textarea name="Marketing tools"></textarea>
+            </label>
+            <label>
+              <span class="label-text">What do you like and dislike about your website?</span>
+              <textarea name="Website likes and dislikes"></textarea>
+            </label>
+            <label>
+              <span class="label-text">Where do customers or leads fall through the cracks?</span>
+              <span class="label-hint">After-hours calls, slow replies, unclear quote requests, no reminders, no review process, no email/text follow-up.</span>
+              <textarea name="Lead leakage"></textarea>
+            </label>
+            <label>
+              <span class="label-text">What kind of customer or job is most valuable right now?</span>
+              <span class="label-hint">Catering orders, emergency repairs, monthly retainers, higher-ticket appointments, recurring customers.</span>
+              <textarea name="Most valuable customer"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset class="optional-details" hidden data-detail-section>
+            <legend>Priority areas</legend>
+            <p class="field-note">Choose any that would save time, recover revenue, or reduce owner stress.</p>
+            <div class="checkbox-grid">
+              <label><input name="Priority" type="checkbox" value="Scheduling"> Scheduling</label>
+              <label><input name="Priority" type="checkbox" value="Customer follow-up"> Customer follow-up</label>
+              <label><input name="Priority" type="checkbox" value="Menu/service updates"> Menu/service updates</label>
+              <label><input name="Priority" type="checkbox" value="Local SEO"> Local SEO</label>
+              <label><input name="Priority" type="checkbox" value="Reviews"> Reviews</label>
+              <label><input name="Priority" type="checkbox" value="Advertising"> Advertising</label>
+              <label><input name="Priority" type="checkbox" value="Payroll/admin"> Payroll/admin</label>
+              <label><input name="Priority" type="checkbox" value="Reporting"> Reporting</label>
+              <label><input name="Priority" type="checkbox" value="Quoting/intake"> Quoting/intake</label>
+              <label><input name="Priority" type="checkbox" value="Website trust"> Website trust</label>
+            </div>
+            <label>
+              <span class="label-text">If one fix could produce measurable value in 30 days, what would you want it to be?</span>
+              <textarea name="Best 30-day fix"></textarea>
+            </label>
+          </fieldset>
+
+          <div class="survey-actions">
+            <button class="button primary" type="submit">Email survey answers</button>
+            <button class="button secondary" type="button" data-copy-responses>Copy filled answers</button>
+            <a class="button secondary" href="mailto:hello@ai-usage.biz?subject=AI%20Usage%20Snapshot%20Request">Email us directly</a>
+            <p class="copy-status" data-response-copy-status aria-live="polite"></p>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <span>AI Usage</span>
+      <span>Practical AI systems for small business.</span>
+    </footer>
+    <script src="/survey.js?v=20260626-analytics"></script>
+  </body>
+</html>
