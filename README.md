@@ -8,6 +8,7 @@ Basic static site for AI Usage.
 - `styles.css`
 - `survey.html`
 - `business.html`
+- `autonomous-business-bot.html`
 - `nginx/ai-usage.biz.conf`
 
 Private prospecting notes and marketing working files are intentionally excluded
@@ -26,7 +27,7 @@ from this repo.
 
 - Registrar/DNS: Namecheap BasicDNS
 - Mail Settings: Email Forwarding
-- Catch-all redirect: `*@ai-usage.biz` forwards to `louieleolarry@gmail.com`
+- Catch-all redirect: `*@ai-usage.biz` forwards to the private operator inbox
 - Added: 2026-06-26
 - Namecheap note: forwarding changes may take up to 60 minutes to take effect.
 
