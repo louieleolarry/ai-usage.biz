@@ -1,0 +1,22 @@
+[Unit]
+Description=AI Usage survey API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ai-usage.biz/html
+ExecStart=/usr/local/bin/node /var/www/ai-usage.biz/html/api/server.js
+Restart=always
+RestartSec=5
+Environment=PORT=8011
+Environment=AI_USAGE_API_HOST=127.0.0.1
+Environment=AI_USAGE_DB_PATH=/var/lib/ai-usage/local-db.json
+Environment=AI_USAGE_ADMIN_EMAIL=hello@ai-usage.biz
+Environment="AI_USAGE_FROM_EMAIL=AI Usage <hello@ai-usage.biz>"
+Environment=AI_USAGE_SENDMAIL_PATH=/usr/sbin/sendmail
+EnvironmentFile=-/etc/ai-usage-api.env
+
+[Install]
+WantedBy=multi-user.target

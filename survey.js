@@ -4,8 +4,13 @@ const detailToggle = document.querySelector("[data-detail-toggle]");
 const detailSections = document.querySelectorAll("[data-detail-section]");
 const copyResponsesButton = document.querySelector("[data-copy-responses]");
 const responseCopyStatus = document.querySelector("[data-response-copy-status]");
-const surveyForm = document.querySelector(".survey-form");
+const surveyForm = document.querySelector("[data-survey-form]");
 const requiredChoiceGroups = document.querySelectorAll("[data-required-choice]");
+const responseIdInput = document.querySelector("[data-response-id]");
+const submitButton = document.querySelector("[data-submit-survey]");
+const submitStatus = document.querySelector("[data-submit-status]");
+const responseStorageKey = "aiUsageSurveyResponseId";
+const responseFingerprintStorageKey = "aiUsageSurveyResponseFingerprint";
 
 const trackEvent = (eventName, parameters = {}) => {
   window.dataLayer = window.dataLayer || [];
@@ -47,7 +52,7 @@ const setDetailMode = () => {
 };
 
 const getFormSummary = () => {
-  const form = document.querySelector(".survey-form");
+  const form = document.querySelector("[data-survey-form]");
 
   if (!form) {
     return "";
@@ -78,6 +83,66 @@ const getFormSummary = () => {
 
   return `${lines.join("\n")}\n`;
 };
+
+const getFormAnswers = () => {
+  if (!surveyForm) {
+    return {};
+  }
+
+  const formData = new FormData(surveyForm);
+  const answers = {};
+
+  for (const [key, value] of formData.entries()) {
+    const cleanKey = String(key).trim();
+    const cleanValue = String(value).trim();
+
+    if (!cleanKey || cleanKey === "Response ID") {
+      continue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(answers, cleanKey)) {
+      if (!Array.isArray(answers[cleanKey])) {
+        answers[cleanKey] = [answers[cleanKey]];
+      }
+
+      if (cleanValue) {
+        answers[cleanKey].push(cleanValue);
+      }
+
+      continue;
+    }
+
+    answers[cleanKey] = cleanValue;
+  }
+
+  return answers;
+};
+
+const setSubmitState = ({ status = "", isError = false, isSaving = false } = {}) => {
+  if (submitStatus) {
+    submitStatus.textContent = status;
+    submitStatus.classList.toggle("is-error", Boolean(isError));
+  }
+
+  if (submitButton) {
+    submitButton.disabled = Boolean(isSaving);
+    submitButton.textContent = isSaving ? "Saving..." : "Save survey";
+  }
+};
+
+const buildMailtoFallback = () => {
+  const subject = encodeURIComponent("AI Usage survey response");
+  const body = encodeURIComponent(getFormSummary());
+  return `mailto:hello@ai-usage.biz?subject=${subject}&body=${body}`;
+};
+
+const getResponseFingerprint = (answers) => [
+  answers["Business name"] || "",
+  answers.Website || "",
+  answers.Email || "",
+]
+  .map((value) => String(value).trim().toLowerCase())
+  .join("|");
 
 const isChoiceGroupComplete = (group) => {
   const hasCheckedOption = Boolean(group.querySelector('input[type="checkbox"]:checked'));
@@ -166,13 +231,77 @@ requiredChoiceGroups.forEach((group) => {
 });
 
 if (surveyForm) {
-  surveyForm.addEventListener("submit", (event) => {
+  surveyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
     if (!validateRequiredChoices({ focusFirstInvalid: true })) {
-      event.preventDefault();
       trackEvent("survey_required_choice_error");
       return;
     }
 
-    trackEvent("survey_mailto_submit");
+    const answers = getFormAnswers();
+    const responseFingerprint = getResponseFingerprint(answers);
+    const storedFingerprint = window.localStorage.getItem(responseFingerprintStorageKey) || "";
+    const storedResponseId = window.localStorage.getItem(responseStorageKey) || "";
+    const responseId = responseFingerprint && responseFingerprint === storedFingerprint
+      ? responseIdInput?.value || storedResponseId
+      : "";
+    const payload = {
+      responseId,
+      source: "survey",
+      answers,
+    };
+
+    setSubmitState({ status: "Saving survey...", isSaving: true });
+
+    try {
+      const response = await fetch("/api/survey-responses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Survey could not be saved.");
+      }
+
+      if (result.responseId) {
+        window.localStorage.setItem(responseStorageKey, result.responseId);
+        window.localStorage.setItem(responseFingerprintStorageKey, responseFingerprint);
+
+        if (responseIdInput) {
+          responseIdInput.value = result.responseId;
+        }
+      }
+
+      setSubmitState({
+        status: result.notificationStatus === "sent"
+          ? "Saved. Admin notification email sent."
+          : "Saved. Admin notification queued for delivery.",
+      });
+      trackEvent("survey_api_submit", {
+        notification_status: result.notificationStatus || "unknown",
+      });
+    } catch (error) {
+      setSubmitState({
+        status: "API save failed. Your answers are still filled in; use Copy or Email us directly as a fallback.",
+        isError: true,
+      });
+      trackEvent("survey_api_submit_error", {
+        message: error.message,
+      });
+
+      const fallbackLink = document.querySelector('a[href^="mailto:hello@ai-usage.biz"]');
+      fallbackLink?.setAttribute("href", buildMailtoFallback());
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Save survey";
+      }
+    }
   });
 }

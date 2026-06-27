@@ -26,7 +26,7 @@
     <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-    <link rel="stylesheet" href="/styles.css?v=20260627-bot-setup">
+    <link rel="stylesheet" href="/styles.css?v=20260627-contact-role">
     <script defer src="/city-config.js?v=20260626-subdomain-route"></script>
   </head>
   <body>
@@ -82,7 +82,48 @@
           </p>
         </div>
 
-        <form class="survey-form" action="mailto:hello@ai-usage.biz" method="post" enctype="text/plain">
+        <form class="survey-form" data-survey-form>
+          <input name="Response ID" type="hidden" data-response-id>
+          <fieldset>
+            <legend>Contact basics</legend>
+            <div class="form-grid">
+              <label>
+                <span class="label-text">Business name</span>
+              <input name="Business name" type="text" autocomplete="organization">
+              </label>
+              <label>
+                <span class="label-text">Website</span>
+                <input name="Website" type="url" placeholder="https://">
+              </label>
+              <label class="full-span">
+                <span class="label-text">Best contact email</span>
+                <input name="Email" type="email" autocomplete="email">
+              </label>
+              <div class="full-span">
+                <p class="label-text" id="contact-role-label">Who is answering?</p>
+                <div class="role-toggle" role="radiogroup" aria-labelledby="contact-role-label">
+                  <label class="role-toggle-option">
+                    <input name="Contact role" type="radio" value="Owner" checked>
+                    <span>Owner</span>
+                  </label>
+                  <label class="role-toggle-option is-disabled">
+                    <input name="Contact role" type="radio" value="Employee" disabled>
+                    <span>Employee</span>
+                  </label>
+                </div>
+              </div>
+              <label class="full-span">
+                <span class="label-text">Permission to send a short one-page snapshot?</span>
+                <select name="Follow-up permission">
+                  <option value="">Choose one</option>
+                  <option>Yes, send a snapshot</option>
+                  <option>Maybe, ask first</option>
+                  <option>No follow-up for now</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
           <fieldset class="survey-mode">
             <legend>Survey length</legend>
             <label class="toggle-row">
@@ -99,33 +140,6 @@
                 </span>
               </span>
             </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Contact basics</legend>
-            <div class="form-grid">
-              <label>
-                <span class="label-text">Business name</span>
-              <input name="Business name" type="text" autocomplete="organization">
-              </label>
-              <label>
-                <span class="label-text">Website</span>
-                <input name="Website" type="url" placeholder="https://">
-              </label>
-              <label class="full-span">
-                <span class="label-text">Best contact email</span>
-                <input name="Email" type="email" autocomplete="email">
-              </label>
-              <label class="full-span">
-                <span class="label-text">Permission to send a short one-page snapshot?</span>
-                <select name="Follow-up permission">
-                  <option value="">Choose one</option>
-                  <option>Yes, send a snapshot</option>
-                  <option>Maybe, ask first</option>
-                  <option>No follow-up for now</option>
-                </select>
-              </label>
-            </div>
           </fieldset>
 
           <fieldset>
@@ -241,10 +255,11 @@
           </fieldset>
 
           <div class="survey-actions">
-            <button class="button primary" type="submit">Email survey answers</button>
+            <button class="button primary" type="submit" data-submit-survey>Save survey</button>
             <button class="button secondary" type="button" data-copy-responses>Copy filled answers</button>
             <a class="button secondary" href="mailto:hello@ai-usage.biz?subject=AI%20Usage%20Snapshot%20Request">Email us directly</a>
             <p class="copy-status" data-response-copy-status aria-live="polite"></p>
+            <p class="submit-status" data-submit-status aria-live="polite"></p>
           </div>
         </form>
       </section>
@@ -254,6 +269,6 @@
       <span>AI Usage</span>
       <span>Practical AI systems for small business.</span>
     </footer>
-    <script src="/survey.js?v=20260626-choice-groups"></script>
+    <script src="/survey.js?v=20260627-survey-api"></script>
   </body>
 </html>

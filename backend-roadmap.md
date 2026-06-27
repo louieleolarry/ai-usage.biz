@@ -26,7 +26,7 @@ location /api/ {
 
 Start like Workflow Shortcuts:
 
-- `LOCAL_DB_PATH=/var/lib/ai-usage/local-db.json` for the first production version.
+- `AI_USAGE_DB_PATH=/var/lib/ai-usage/local-db.json` for the first production version.
 - Optional `MONGODB_URI` later for real concurrent editing and search.
 - Atomic writes for local JSON so survey submissions do not corrupt the file.
 
@@ -42,10 +42,49 @@ Core collections:
 
 - `GET /api/health`
 - `POST /api/survey-responses`
+- `GET /api/survey-responses` with `Authorization: Bearer $AI_USAGE_ADMIN_API_TOKEN`
 - `GET /api/businesses`
 - `POST /api/businesses`
 - `GET /api/plazas`
 - `GET /api/plazas/:id/businesses`
+
+## Implemented First Pass
+
+`api/server.js` now implements:
+
+- `GET /api/health`
+- `POST /api/survey-responses`
+- `GET /api/survey-responses` behind `AI_USAGE_ADMIN_API_TOKEN`
+
+The first pass stores:
+
+- `surveyResponses`
+- `businesses`
+- `notifications`
+
+Each survey submit upserts a business by existing business id, website, email,
+or business name. The frontend keeps a local response id only for the same
+business fingerprint, so back-to-back field surveys create separate records.
+
+Admin notification behavior:
+
+- Sends through `/usr/sbin/sendmail` by default when available.
+- If sendmail is unavailable or fails, writes a `.eml` file under
+  `notification-outbox` next to the configured database file.
+- Either path still returns a successful save as long as the database write
+  succeeds.
+
+Useful production environment variables:
+
+```sh
+PORT=8011
+AI_USAGE_API_HOST=127.0.0.1
+AI_USAGE_DB_PATH=/var/lib/ai-usage/local-db.json
+AI_USAGE_ADMIN_EMAIL=hello@ai-usage.biz
+AI_USAGE_FROM_EMAIL="AI Usage <hello@ai-usage.biz>"
+AI_USAGE_SENDMAIL_PATH=/usr/sbin/sendmail
+AI_USAGE_ADMIN_API_TOKEN=change-this-before-admin-read-access
+```
 
 ## Business Record Shape
 

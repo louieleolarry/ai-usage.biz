@@ -2,3 +2,5 @@
 /private/
 /marketing-package/
 *.log
+/data/
+/notification-outbox/

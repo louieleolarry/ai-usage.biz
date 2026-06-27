@@ -2,6 +2,8 @@
 
 Basic static site for AI Usage.
 
+Includes a small Node API for survey persistence and admin notifications.
+
 ## Local Files
 
 - `index.html`
@@ -9,6 +11,8 @@ Basic static site for AI Usage.
 - `survey.html`
 - `business.html`
 - `autonomous-business-bot.html`
+- `api/server.js`
+- `ops/ai-usage-api.service`
 - `nginx/ai-usage.biz.conf`
 
 Private prospecting notes and marketing working files are intentionally excluded
@@ -43,3 +47,33 @@ Renewal should be handled by the host's existing Certbot renewal setup. To inspe
 ```sh
 sudo certbot certificates
 ```
+
+## Survey API
+
+Local dev:
+
+```sh
+npm run dev
+curl http://127.0.0.1:8011/api/health
+```
+
+Production route:
+
+- Nginx proxies `/api/` to `http://127.0.0.1:8011/api/`.
+- Survey responses save to `AI_USAGE_DB_PATH`, defaulting to
+  `/var/lib/ai-usage/local-db.json`.
+- Each save attempts an admin notification email to `AI_USAGE_ADMIN_EMAIL`.
+- If local sendmail is unavailable, the notification is queued as an `.eml`
+  file next to the database instead of blocking capture.
+
+Minimum production environment:
+
+```sh
+PORT=8011
+AI_USAGE_DB_PATH=/var/lib/ai-usage/local-db.json
+AI_USAGE_ADMIN_EMAIL=hello@ai-usage.biz
+AI_USAGE_ADMIN_API_TOKEN=replace-with-a-private-token
+```
+
+The starter systemd unit lives at `ops/ai-usage-api.service`; keep the private
+`AI_USAGE_ADMIN_API_TOKEN` in `/etc/ai-usage-api.env`.

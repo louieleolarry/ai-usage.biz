@@ -1,0 +1,13 @@
+{
+  "name": "ai-usage-biz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static AI Usage site with a small local survey API.",
+  "scripts": {
+    "start": "node api/server.js",
+    "dev": "AI_USAGE_DB_PATH=./data/local-db.json node api/server.js"
+  },
+  "engines": {
+    "node": ">=16.13"
+  }
+}
