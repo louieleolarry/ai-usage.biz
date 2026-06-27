@@ -26,7 +26,7 @@
     <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-    <link rel="stylesheet" href="/styles.css?v=20260627-contact-role">
+    <link rel="stylesheet" href="/styles.css?v=20260627-segmented-toggle-flip">
     <script defer src="/city-config.js?v=20260626-subdomain-route"></script>
   </head>
   <body>
@@ -99,47 +99,49 @@
                 <span class="label-text">Best contact email</span>
                 <input name="Email" type="email" autocomplete="email">
               </label>
-              <div class="full-span">
-                <p class="label-text" id="contact-role-label">Who is answering?</p>
-                <div class="role-toggle" role="radiogroup" aria-labelledby="contact-role-label">
-                  <label class="role-toggle-option">
-                    <input name="Contact role" type="radio" value="Owner" checked>
-                    <span>Owner</span>
-                  </label>
-                  <label class="role-toggle-option is-disabled">
-                    <input name="Contact role" type="radio" value="Employee" disabled>
-                    <span>Employee</span>
-                  </label>
+              <div class="snapshot-role-row full-span">
+                <label>
+                  <span class="label-text">Permission to send a short one-page snapshot?</span>
+                  <select name="Follow-up permission">
+                    <option value="">Choose one</option>
+                    <option>Yes, send a snapshot</option>
+                    <option>Maybe, ask first</option>
+                    <option>No follow-up for now</option>
+                  </select>
+                </label>
+                <div class="role-toggle-field">
+                  <p class="label-text" id="contact-role-label">Role</p>
+                  <span class="segmented-toggle role-toggle" role="group" aria-labelledby="contact-role-label">
+                    <input name="Contact role" type="hidden" value="Owner" data-segmented-output>
+                    <input class="segmented-toggle-input" id="contact-role-toggle" type="checkbox" role="switch" aria-label="Employee" data-left-value="Owner" data-right-value="Employee">
+                    <span class="segmented-toggle-track">
+                      <span class="segmented-toggle-option">Owner</span>
+                      <span class="segmented-toggle-option">Employee</span>
+                      <span class="segmented-toggle-thumb"></span>
+                    </span>
+                  </span>
                 </div>
               </div>
-              <label class="full-span">
-                <span class="label-text">Permission to send a short one-page snapshot?</span>
-                <select name="Follow-up permission">
-                  <option value="">Choose one</option>
-                  <option>Yes, send a snapshot</option>
-                  <option>Maybe, ask first</option>
-                  <option>No follow-up for now</option>
-                </select>
-              </label>
             </div>
           </fieldset>
 
           <fieldset class="survey-mode">
             <legend>Survey length</legend>
-            <label class="toggle-row">
+            <div class="toggle-row">
               <span>
-                <span class="label-text">Owner is willing to share more detail</span>
+                <span class="label-text" id="survey-length-label">Owner is willing to share more detail</span>
                 <span class="label-hint">Leave this off for the quick street version. Turn it on for pricing, website, computer-use, and tool questions.</span>
               </span>
-              <span class="detail-switch">
-                <input name="Share more detail" type="checkbox" value="Yes" role="switch" aria-checked="false" data-detail-toggle>
-                <span class="detail-switch-track" aria-hidden="true">
-                  <span class="detail-switch-option">3 questions</span>
-                  <span class="detail-switch-option">More detail</span>
-                  <span class="detail-switch-thumb"></span>
+              <span class="segmented-toggle detail-switch" role="group" aria-labelledby="survey-length-label">
+                <input name="Share more detail" type="hidden" value="No" data-segmented-output>
+                <input class="segmented-toggle-input" id="survey-length-detail" type="checkbox" value="Yes" role="switch" aria-label="More detail" data-left-value="No" data-right-value="Yes" data-detail-toggle>
+                <span class="segmented-toggle-track">
+                  <span class="segmented-toggle-option">3 questions</span>
+                  <span class="segmented-toggle-option">More detail</span>
+                  <span class="segmented-toggle-thumb"></span>
                 </span>
               </span>
-            </label>
+            </div>
           </fieldset>
 
           <fieldset>
@@ -269,6 +271,6 @@
       <span>AI Usage</span>
       <span>Practical AI systems for small business.</span>
     </footer>
-    <script src="/survey.js?v=20260627-survey-api"></script>
+    <script src="/survey.js?v=20260627-segmented-toggle-flip"></script>
   </body>
 </html>

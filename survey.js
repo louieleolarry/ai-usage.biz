@@ -51,6 +51,53 @@ const setDetailMode = () => {
   });
 };
 
+const setSegmentedToggleChecked = (toggle, checked) => {
+  const input = toggle.querySelector(".segmented-toggle-input");
+
+  if (!input) {
+    return;
+  }
+
+  input.checked = checked;
+  updateSegmentedToggleOutput(toggle);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
+const updateSegmentedToggleOutput = (toggle) => {
+  const input = toggle.querySelector(".segmented-toggle-input");
+  const output = toggle.querySelector("[data-segmented-output]");
+
+  if (input && output) {
+    output.value = input.checked
+      ? input.dataset.rightValue || input.value || "Yes"
+      : input.dataset.leftValue || "";
+  }
+};
+
+document.querySelectorAll(".segmented-toggle-track").forEach((track) => {
+  track.addEventListener("click", (event) => {
+    const toggle = track.closest(".segmented-toggle");
+
+    if (!toggle) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const input = toggle.querySelector(".segmented-toggle-input");
+    setSegmentedToggleChecked(toggle, !input?.checked);
+  });
+});
+
+document.querySelectorAll(".segmented-toggle").forEach((toggle) => {
+  const input = toggle.querySelector(".segmented-toggle-input");
+
+  updateSegmentedToggleOutput(toggle);
+  input?.addEventListener("change", () => updateSegmentedToggleOutput(toggle));
+});
+
 const getFormSummary = () => {
   const form = document.querySelector("[data-survey-form]");
 
