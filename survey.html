@@ -26,8 +26,8 @@
     <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-    <link rel="stylesheet" href="/styles.css?v=20260627-segmented-toggle-flip">
-    <script defer src="/city-config.js?v=20260626-subdomain-route"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260627-nav-states">
+    <script defer src="/city-config.js?v=20260627-anchor-nav"></script>
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->
@@ -44,7 +44,7 @@
         <a href="/#packages">Packages</a>
         <a href="/autonomous-business-bot">Bot Setup</a>
         <span data-city-nav></span>
-        <a href="/survey">Survey</a>
+        <a href="/survey" aria-current="page">Survey</a>
         <a href="/#contact">Contact</a>
       </nav>
     </header>
@@ -257,9 +257,8 @@
           </fieldset>
 
           <div class="survey-actions">
-            <button class="button primary" type="submit" data-submit-survey>Save survey</button>
-            <button class="button secondary" type="button" data-copy-responses>Copy filled answers</button>
-            <a class="button secondary" href="mailto:hello@ai-usage.biz?subject=AI%20Usage%20Snapshot%20Request">Email us directly</a>
+            <button class="button primary" type="submit" data-submit-survey data-default-label="Submit">Submit</button>
+            <button class="button secondary" type="button" data-copy-responses>Copy</button>
             <p class="copy-status" data-response-copy-status aria-live="polite"></p>
             <p class="submit-status" data-submit-status aria-live="polite"></p>
           </div>
@@ -271,6 +270,6 @@
       <span>AI Usage</span>
       <span>Practical AI systems for small business.</span>
     </footer>
-    <script src="/survey.js?v=20260627-segmented-toggle-flip"></script>
+    <script src="/survey.js?v=20260628-email-submit"></script>
   </body>
 </html>

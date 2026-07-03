@@ -7,7 +7,7 @@ const responseCopyStatus = document.querySelector("[data-response-copy-status]")
 const surveyForm = document.querySelector("[data-survey-form]");
 const requiredChoiceGroups = document.querySelectorAll("[data-required-choice]");
 const responseIdInput = document.querySelector("[data-response-id]");
-const submitButton = document.querySelector("[data-submit-survey]");
+const submitButtons = document.querySelectorAll("[data-submit-survey]");
 const submitStatus = document.querySelector("[data-submit-status]");
 const responseStorageKey = "aiUsageSurveyResponseId";
 const responseFingerprintStorageKey = "aiUsageSurveyResponseFingerprint";
@@ -171,16 +171,10 @@ const setSubmitState = ({ status = "", isError = false, isSaving = false } = {})
     submitStatus.classList.toggle("is-error", Boolean(isError));
   }
 
-  if (submitButton) {
-    submitButton.disabled = Boolean(isSaving);
-    submitButton.textContent = isSaving ? "Saving..." : "Save survey";
-  }
-};
-
-const buildMailtoFallback = () => {
-  const subject = encodeURIComponent("AI Usage survey response");
-  const body = encodeURIComponent(getFormSummary());
-  return `mailto:hello@ai-usage.biz?subject=${subject}&body=${body}`;
+  submitButtons.forEach((button) => {
+    button.disabled = Boolean(isSaving);
+    button.textContent = isSaving ? "Saving..." : button.dataset.defaultLabel || "Submit";
+  });
 };
 
 const getResponseFingerprint = (answers) => [
@@ -335,20 +329,17 @@ if (surveyForm) {
       });
     } catch (error) {
       setSubmitState({
-        status: "API save failed. Your answers are still filled in; use Copy or Email us directly as a fallback.",
+        status: "API save failed. Your answers are still filled in; use Copy as a fallback.",
         isError: true,
       });
       trackEvent("survey_api_submit_error", {
         message: error.message,
       });
-
-      const fallbackLink = document.querySelector('a[href^="mailto:hello@ai-usage.biz"]');
-      fallbackLink?.setAttribute("href", buildMailtoFallback());
     } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = "Save survey";
-      }
+      submitButtons.forEach((button) => {
+        button.disabled = false;
+        button.textContent = button.dataset.defaultLabel || "Submit";
+      });
     }
   });
 }

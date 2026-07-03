@@ -62,6 +62,9 @@ const cityByHost = {
 };
 
 const cityConfig = cityByHost[window.location.hostname.toLowerCase()];
+const currentPath = window.location.pathname.replace(/\/$/, "");
+const isBusinessPath = currentPath === "/business" || currentPath === "/business.html";
+const isHomePath = currentPath === "" || currentPath === "/index.html";
 
 if (cityConfig) {
   document.documentElement.dataset.city = cityConfig.slug;
@@ -73,6 +76,9 @@ document.querySelectorAll("[data-city-nav]").forEach((slot) => {
     fallbackLink.href = "/business";
     fallbackLink.textContent = "Business";
     fallbackLink.setAttribute("data-city", "all");
+    if (isBusinessPath) {
+      fallbackLink.setAttribute("aria-current", "page");
+    }
     slot.replaceWith(fallbackLink);
     return;
   }
@@ -81,5 +87,49 @@ document.querySelectorAll("[data-city-nav]").forEach((slot) => {
   link.href = "/business";
   link.textContent = cityConfig.label;
   link.setAttribute("data-city", cityConfig.slug);
+  if (isBusinessPath) {
+    link.setAttribute("aria-current", "page");
+  }
   slot.replaceWith(link);
 });
+
+const navLinks = Array.from(document.querySelectorAll('nav a[href]'));
+
+function setActiveNavLink() {
+  navLinks.forEach((link) => link.removeAttribute("aria-current"));
+
+  const hash = window.location.hash;
+  const hashLink = hash && isHomePath
+    ? navLinks.find((link) => link.getAttribute("href") === `/${hash}`)
+    : null;
+
+  if (hashLink) {
+    hashLink.setAttribute("aria-current", "location");
+    return;
+  }
+
+  const activeLink = navLinks.find((link) => {
+    const href = link.getAttribute("href");
+    return (
+      (isHomePath && href === "/") ||
+      (isBusinessPath && href === "/business") ||
+      (currentPath === "/survey" && href === "/survey") ||
+      (currentPath === "/survey.html" && href === "/survey") ||
+      (currentPath === "/autonomous-business-bot" && href === "/autonomous-business-bot") ||
+      (currentPath === "/autonomous-business-bot.html" && href === "/autonomous-business-bot")
+    );
+  });
+
+  if (activeLink) {
+    activeLink.setAttribute("aria-current", "page");
+  }
+}
+
+navLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    window.requestAnimationFrame(setActiveNavLink);
+  });
+});
+
+window.addEventListener("hashchange", setActiveNavLink);
+setActiveNavLink();
