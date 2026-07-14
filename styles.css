@@ -311,6 +311,46 @@ footer {
   margin-top: 0.45rem;
 }
 
+.video-feature {
+  padding-top: 3rem;
+}
+
+.video-card {
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(24, 32, 27, 0.08);
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  margin-top: 2rem;
+  overflow: hidden;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.video-card video {
+  aspect-ratio: 16 / 9;
+  background: #0b1020;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-sizing: border-box;
+  display: block;
+  height: auto;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.video-copy {
+  align-self: center;
+  padding: clamp(0.25rem, 1.5vw, 1rem);
+}
+
+.video-copy p {
+  color: var(--muted);
+}
+
 .pricing-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -831,6 +871,7 @@ textarea:focus {
   .principle-grid,
   .detail-grid,
   .pricing-grid,
+  .video-card,
   .plaza-grid {
     grid-template-columns: 1fr;
   }
