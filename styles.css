@@ -329,16 +329,26 @@ footer {
   padding: clamp(1rem, 2vw, 1.5rem);
 }
 
-.video-card video {
+.video-frame {
   aspect-ratio: 16 / 9;
   background: #0b1020;
   border: 1px solid var(--line);
   border-radius: 8px;
   box-sizing: border-box;
-  display: block;
-  height: auto;
-  max-width: 100%;
+  line-height: 0;
   min-width: 0;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.video-frame video {
+  background: #0b1020;
+  display: block;
+  height: 100%;
+  inset: 0;
+  object-fit: contain;
+  position: absolute;
   width: 100%;
 }
 
