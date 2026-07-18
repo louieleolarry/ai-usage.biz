@@ -113,11 +113,12 @@ const answerList = (answers, key) => [
   ...toArray(answers[`${key} - Custom`]),
 ];
 
-const getSubmissionTag = ({ answers = {}, source = "", submissionTag = "" } = {}) => {
+const getSubmissionTag = ({ answers = {}, name = "", source = "", submissionTag = "" } = {}) => {
   const values = [
     ...toArray(answers["Test submission"]),
     ...toArray(answers["Submission tag"]),
     normalize(answers["Business name"]),
+    normalize(name),
     normalize(source),
     normalize(submissionTag),
   ].map((value) => value.toLowerCase());
@@ -423,20 +424,51 @@ const ensureHeaders = async (sheetName, headers, values) => {
   }
 };
 
+const findSheetRowMatch = ({ values, headers, keyHeader, row }) => {
+  const keyIndex = headers.indexOf(keyHeader);
+  const keyValue = row[keyIndex];
+  const exactIndex = values.findIndex((existingRow, index) => index > 0 && existingRow[keyIndex] === keyValue);
+
+  if (exactIndex >= 0 || keyHeader !== "Response ID") {
+    return {
+      index: exactIndex,
+      legacyColumns: false,
+    };
+  }
+
+  const businessIdIndex = headers.indexOf("Business ID");
+
+  if (businessIdIndex < 0) {
+    return {
+      index: -1,
+      legacyColumns: false,
+    };
+  }
+
+  const legacyIndex = values.findIndex((existingRow, index) =>
+    index > 0
+      && existingRow[keyIndex] === row[businessIdIndex]
+      && existingRow[businessIdIndex] === keyValue
+  );
+
+  return {
+    index: legacyIndex,
+    legacyColumns: legacyIndex >= 0,
+  };
+};
+
 const upsertSheetRow = async ({ sheetName, headers, keyHeader, row }) => {
   await ensureSheet(sheetName);
 
   const values = await getSheetValues(sheetName, headers.length);
   await ensureHeaders(sheetName, headers, values);
 
-  const keyIndex = headers.indexOf(keyHeader);
-  const keyValue = row[keyIndex];
-  const existingIndex = values.findIndex((existingRow, index) => index > 0 && existingRow[keyIndex] === keyValue);
+  const rowMatch = findSheetRowMatch({ values, headers, keyHeader, row });
 
-  if (existingIndex >= 0) {
-    await updateValues(sheetName, existingIndex + 1, row);
+  if (rowMatch.index >= 0) {
+    await updateValues(sheetName, rowMatch.index + 1, row);
     return {
-      action: "updated",
+      action: rowMatch.legacyColumns ? "updated-legacy" : "updated",
       rowCount: values.length,
     };
   }
@@ -732,6 +764,8 @@ module.exports = {
   BUSINESS_SHEET,
   RESPONSE_SHEET,
   businessHeaders,
+  findSheetRowMatch,
+  getSubmissionTag,
   isSheetsConfigured,
   responseHeaders,
   syncBusinessToSheets,
