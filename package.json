@@ -5,7 +5,8 @@
   "description": "Static AI Usage site with a small local survey API.",
   "scripts": {
     "start": "node api/server.js",
-    "dev": "AI_USAGE_DB_PATH=./data/local-db.json node api/server.js"
+    "dev": "AI_USAGE_DB_PATH=./data/local-db.json node api/server.js",
+    "backfill:sheets": "node scripts/backfill-sheets.js"
   },
   "engines": {
     "node": ">=16.13"

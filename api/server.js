@@ -3,15 +3,36 @@ const fs = require("node:fs/promises");
 const http = require("node:http");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { syncBusinessToSheets, syncSurveyToSheets } = require("./google-sheets");
 
 const PORT = Number(process.env.PORT || process.env.AI_USAGE_API_PORT || 8011);
 const HOST = process.env.AI_USAGE_API_HOST || "127.0.0.1";
+const STATIC_ROOT = path.resolve(__dirname, "..");
 const DB_PATH = path.resolve(process.env.AI_USAGE_DB_PATH || "/var/lib/ai-usage/local-db.json");
 const ADMIN_EMAIL = process.env.AI_USAGE_ADMIN_EMAIL || "hello@ai-usage.biz";
 const FROM_EMAIL = process.env.AI_USAGE_FROM_EMAIL || "AI Usage <hello@ai-usage.biz>";
 const SENDMAIL_PATH = process.env.AI_USAGE_SENDMAIL_PATH || "/usr/sbin/sendmail";
 const ADMIN_API_TOKEN = process.env.AI_USAGE_ADMIN_API_TOKEN || "";
+const GOOGLE_MAPS_BROWSER_KEY = process.env.AI_USAGE_GOOGLE_MAPS_BROWSER_KEY || "";
 const MAX_BODY_BYTES = 64 * 1024;
+const CAPTURE_LOG_PATH = path.resolve(
+  process.env.AI_USAGE_CAPTURE_LOG_PATH || path.join(path.dirname(DB_PATH), "survey-capture-log.jsonl")
+);
+const STATIC_MIME_TYPES = Object.freeze({
+  ".css": "text/css; charset=utf-8",
+  ".gif": "image/gif",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".mp4": "video/mp4",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".woff2": "font/woff2",
+});
 
 let writeQueue = Promise.resolve();
 
@@ -21,10 +42,22 @@ const baseDatabase = () => ({
   surveyResponses: [],
   businesses: [],
   notifications: [],
+  sheetSyncs: [],
 });
 
 const ensureDbDir = async () => {
   await fs.mkdir(path.dirname(DB_PATH), { recursive: true });
+};
+
+const backupInvalidDatabase = async (raw, error) => {
+  if (!raw.trim()) {
+    return "";
+  }
+
+  const backupPath = `${DB_PATH}.invalid-${nowIso().replace(/[:.]/g, "-")}`;
+  await fs.writeFile(backupPath, raw, "utf8");
+  console.error(`Invalid survey database copied aside at ${backupPath}: ${error.message}`);
+  return backupPath;
 };
 
 const readDatabase = async () => {
@@ -32,6 +65,10 @@ const readDatabase = async () => {
 
   try {
     const raw = await fs.readFile(DB_PATH, "utf8");
+    if (!raw.trim()) {
+      return baseDatabase();
+    }
+
     const parsed = JSON.parse(raw);
     return {
       ...baseDatabase(),
@@ -39,11 +76,18 @@ const readDatabase = async () => {
       surveyResponses: Array.isArray(parsed.surveyResponses) ? parsed.surveyResponses : [],
       businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [],
       notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
+      sheetSyncs: Array.isArray(parsed.sheetSyncs) ? parsed.sheetSyncs : [],
     };
   } catch (error) {
     if (error.code === "ENOENT") {
       return baseDatabase();
     }
+
+    if (error instanceof SyntaxError) {
+      await backupInvalidDatabase(await fs.readFile(DB_PATH, "utf8").catch(() => ""), error);
+      return baseDatabase();
+    }
+
     throw error;
   }
 };
@@ -89,6 +133,49 @@ const answerList = (answers, key) => [
   ...toArray(answers[`${key} - Custom`]),
 ];
 
+const isTestSubmission = (answers, source = "") => {
+  const submittedValues = [
+    ...toArray(answers["Test submission"]),
+    ...toArray(answers["Submission tag"]),
+    normalize(answers["Business name"]),
+    normalize(source),
+  ].map((value) => value.toLowerCase());
+
+  return submittedValues.some((value) => ["yes", "true", "test", "production-smoke"].includes(value) || /(^|[-\s])smoke($|[-\s])|^test/.test(value));
+};
+
+const normalizeSubmissionAnswers = (answers, source = "") => {
+  const normalizedAnswers = { ...answers };
+  const testSubmission = isTestSubmission(normalizedAnswers, source);
+
+  normalizedAnswers["Test submission"] = testSubmission ? "Yes" : "No";
+  normalizedAnswers["Submission tag"] = testSubmission ? "test" : "live";
+
+  return normalizedAnswers;
+};
+
+const preferSubmitted = (previous, key, value) => {
+  const cleanValue = normalize(value);
+  return cleanValue || normalize(previous?.[key]);
+};
+
+const preferSubmittedArray = (previous, key, values) => {
+  if (values.length) {
+    return values;
+  }
+
+  return Array.isArray(previous?.[key]) ? previous[key] : [];
+};
+
+const appendCaptureLog = async (record) => {
+  try {
+    await fs.mkdir(path.dirname(CAPTURE_LOG_PATH), { recursive: true });
+    await fs.appendFile(CAPTURE_LOG_PATH, `${JSON.stringify(record)}\n`, "utf8");
+  } catch (error) {
+    console.error(`Survey capture log failed: ${error.message}`);
+  }
+};
+
 const readRequestJson = (request) =>
   new Promise((resolve, reject) => {
     let body = "";
@@ -124,6 +211,79 @@ const sendJson = (response, statusCode, payload) => {
     "Cache-Control": "no-store",
   });
   response.end(`${JSON.stringify(payload)}\n`);
+};
+
+const getStaticFilePath = (pathname) => {
+  let decodedPathname;
+
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    return "";
+  }
+
+  const requestedPath = decodedPathname === "/"
+    ? "/index.html"
+    : path.extname(decodedPathname)
+      ? decodedPathname
+      : `${decodedPathname.replace(/\/$/, "")}.html`;
+  const filePath = path.resolve(STATIC_ROOT, `.${requestedPath}`);
+
+  if (filePath !== STATIC_ROOT && !filePath.startsWith(`${STATIC_ROOT}${path.sep}`)) {
+    return "";
+  }
+
+  return filePath;
+};
+
+const sendStatic = async (request, response, pathname) => {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    sendJson(response, 405, {
+      ok: false,
+      error: "Method not allowed.",
+    });
+    return;
+  }
+
+  const filePath = getStaticFilePath(pathname);
+
+  if (!filePath) {
+    sendJson(response, 404, {
+      ok: false,
+      error: "Not found.",
+    });
+    return;
+  }
+
+  try {
+    const file = await fs.readFile(filePath);
+    response.writeHead(200, {
+      "Content-Type": STATIC_MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Cache-Control": "no-store",
+    });
+
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+
+    response.end(file);
+  } catch (error) {
+    if (error.code === "ENOENT" && pathname !== "/") {
+      await sendStatic(request, response, "/");
+      return;
+    }
+
+    if (error.code === "ENOENT") {
+      sendJson(response, 404, {
+        ok: false,
+        error: "Not found.",
+      });
+      return;
+    }
+
+    throw error;
+  }
 };
 
 const escapeHeader = (value) => normalize(value).replace(/[\r\n]+/g, " ");
@@ -208,6 +368,72 @@ const sendAdminNotification = async ({ responseRecord, businessRecord }) => {
   }
 };
 
+const syncSpreadsheet = async ({ responseRecord, businessRecord }) => {
+  const syncId = crypto.randomUUID();
+  const createdAt = nowIso();
+
+  try {
+    const result = await syncSurveyToSheets({ responseRecord, businessRecord });
+    return {
+      id: syncId,
+      responseId: responseRecord.id,
+      businessId: businessRecord.id,
+      status: result.status,
+      responseAction: result.responseAction || "",
+      businessAction: result.businessAction || "",
+      chartRefreshStatus: result.chartRefreshStatus || "",
+      chartRefreshUpdatedCharts: result.chartRefreshUpdatedCharts || 0,
+      chartRefreshReason: result.chartRefreshReason || "",
+      chartRefreshError: result.chartRefreshError || "",
+      reason: result.reason || "",
+      createdAt,
+    };
+  } catch (error) {
+    console.error(`Google Sheets sync failed for response ${responseRecord.id}: ${error.message}`);
+    return {
+      id: syncId,
+      responseId: responseRecord.id,
+      businessId: businessRecord.id,
+      status: "failed",
+      error: error.message,
+      createdAt,
+    };
+  }
+};
+
+const syncBusinessSpreadsheet = async ({ businessRecord }) => {
+  const syncId = crypto.randomUUID();
+  const createdAt = nowIso();
+
+  try {
+    const result = await syncBusinessToSheets({ businessRecord });
+    return {
+      id: syncId,
+      responseId: "",
+      businessId: businessRecord.id,
+      status: result.status,
+      responseAction: "",
+      businessAction: result.businessAction || "",
+      chartRefreshStatus: result.chartRefreshStatus || "",
+      chartRefreshUpdatedCharts: result.chartRefreshUpdatedCharts || 0,
+      chartRefreshReason: result.chartRefreshReason || "",
+      chartRefreshError: result.chartRefreshError || "",
+      reason: result.reason || "",
+      createdAt,
+    };
+  } catch (error) {
+    console.error(`Google Sheets sync failed for business ${businessRecord.id}: ${error.message}`);
+    return {
+      id: syncId,
+      responseId: "",
+      businessId: businessRecord.id,
+      status: "failed",
+      error: error.message,
+      createdAt,
+    };
+  }
+};
+
 const validateSurveyPayload = (payload) => {
   if (!payload || typeof payload !== "object") {
     return "Payload must be a JSON object.";
@@ -236,6 +462,27 @@ const validateSurveyPayload = (payload) => {
   return "";
 };
 
+const validateBusinessMarkerPayload = (payload) => {
+  if (!payload || typeof payload !== "object") {
+    return "Payload must be a JSON object.";
+  }
+
+  if (!payload.answers || typeof payload.answers !== "object" || Array.isArray(payload.answers)) {
+    return "Payload must include an answers object.";
+  }
+
+  const businessName = normalize(payload.answers["Business name"]);
+  const website = normalize(payload.answers.Website);
+  const email = normalize(payload.answers.Email);
+  const googlePlaceId = normalize(payload.answers["Google Place ID"]);
+
+  if (!businessName && !website && !email && !googlePlaceId) {
+    return "Add at least a business name, website, email, or confirmed Google business.";
+  }
+
+  return "";
+};
+
 const findBusinessIndex = (businesses, answers) => {
   const providedBusinessId = normalize(answers.businessId);
 
@@ -249,8 +496,13 @@ const findBusinessIndex = (businesses, answers) => {
   const website = normalize(answers.Website).toLowerCase();
   const email = normalize(answers.Email).toLowerCase();
   const businessName = normalize(answers["Business name"]).toLowerCase();
+  const googlePlaceId = normalize(answers["Google Place ID"]);
 
   return businesses.findIndex((business) => {
+    if (googlePlaceId && normalize(business.googlePlaceId) === googlePlaceId) {
+      return true;
+    }
+
     if (website && normalize(business.website).toLowerCase() === website) {
       return true;
     }
@@ -263,29 +515,97 @@ const findBusinessIndex = (businesses, answers) => {
   });
 };
 
+const buildBusinessRecord = ({
+  previousBusiness,
+  businessId,
+  answers,
+  responseId = "",
+  source = "survey",
+  submittedAt,
+  testSubmission,
+  submissionTag,
+  overrides = {},
+}) => {
+  const priorityAreas = toArray(answers.Priority);
+
+  return {
+    id: businessId,
+    name: preferSubmitted(previousBusiness, "name", answers["Business name"]),
+    website: preferSubmitted(previousBusiness, "website", answers.Website),
+    email: preferSubmitted(previousBusiness, "email", answers.Email),
+    address: preferSubmitted(previousBusiness, "address", answers["Business address"]),
+    googlePlaceId: preferSubmitted(previousBusiness, "googlePlaceId", answers["Google Place ID"]),
+    googleMapsUrl: preferSubmitted(previousBusiness, "googleMapsUrl", answers["Google Maps URL"]),
+    latitude: preferSubmitted(previousBusiness, "latitude", answers["Business latitude"]),
+    longitude: preferSubmitted(previousBusiness, "longitude", answers["Business longitude"]),
+    locationAccuracyMeters: preferSubmitted(previousBusiness, "locationAccuracyMeters", answers["Location accuracy"]),
+    businessDistanceMeters: preferSubmitted(previousBusiness, "businessDistanceMeters", answers["Business distance meters"]),
+    locationSource: preferSubmitted(previousBusiness, "locationSource", answers["Location source"]),
+    locationLabel: preferSubmitted(previousBusiness, "locationLabel", answers["Location label"]),
+    locationConfirmed: normalize(answers["Location confirmed"]) === "Yes"
+      ? "Yes"
+      : normalize(previousBusiness?.locationConfirmed) || normalize(answers["Location confirmed"]),
+    followUpStatus: preferSubmitted(previousBusiness, "followUpStatus", answers["Follow-up permission"]) || "permission blank",
+    solicitationStatus: normalize(previousBusiness?.solicitationStatus) || "unmarked",
+    doNotSolicit: normalize(previousBusiness?.doNotSolicit) || "No",
+    doNotSolicitAt: normalize(previousBusiness?.doNotSolicitAt),
+    doNotSolicitReason: normalize(previousBusiness?.doNotSolicitReason),
+    contactRole: preferSubmitted(previousBusiness, "contactRole", answers["Contact role"]),
+    shareMoreDetail: preferSubmitted(previousBusiness, "shareMoreDetail", answers["Share more detail"]),
+    computerUse: preferSubmitted(previousBusiness, "computerUse", answers["Computer use"]),
+    willingnessToPay: preferSubmitted(previousBusiness, "willingnessToPay", answers["Willingness to pay"]),
+    marketingTools: preferSubmitted(previousBusiness, "marketingTools", answers["Marketing tools"]),
+    websiteLikesAndDislikes: preferSubmitted(previousBusiness, "websiteLikesAndDislikes", answers["Website likes and dislikes"]),
+    leadLeakage: preferSubmitted(previousBusiness, "leadLeakage", answers["Lead leakage"]),
+    mostValuableCustomer: preferSubmitted(previousBusiness, "mostValuableCustomer", answers["Most valuable customer"]),
+    priorityAreas: preferSubmittedArray(previousBusiness, "priorityAreas", priorityAreas),
+    best30DayFix: preferSubmitted(previousBusiness, "best30DayFix", answers["Best 30-day fix"]),
+    testSubmission: testSubmission ? "Yes" : "No",
+    submissionTag,
+    currentAiUse: preferSubmittedArray(previousBusiness, "currentAiUse", answerList(answers, "Current AI use")),
+    mainPainPoint: preferSubmittedArray(previousBusiness, "mainPainPoint", answerList(answers, "Main pain point")),
+    desiredAiPossibility: preferSubmittedArray(previousBusiness, "desiredAiPossibility", answerList(answers, "Desired AI possibility")),
+    latestResponseId: responseId || normalize(previousBusiness?.latestResponseId),
+    updatedAt: submittedAt,
+    createdAt: previousBusiness?.createdAt || submittedAt,
+    source,
+    slug: previousBusiness?.slug || slugify(normalize(answers["Business name"]) || normalize(answers.Website) || businessId),
+    ...overrides,
+  };
+};
+
 const upsertSurveyResponse = async (payload, request) => {
   const submittedAt = nowIso();
   const responseId = normalize(payload.responseId) || crypto.randomUUID();
-  const answers = payload.answers;
+  const source = normalize(payload.source) || "survey";
+  const answers = normalizeSubmissionAnswers(payload.answers, source);
+  const testSubmission = isTestSubmission(answers, source);
+  const submissionTag = testSubmission ? "test" : "live";
+  await appendCaptureLog({
+    id: responseId,
+    source,
+    submissionTag,
+    testSubmission,
+    answers,
+    userAgent: request.headers["user-agent"] || "",
+    ip: request.headers["x-forwarded-for"] || request.socket.remoteAddress || "",
+    receivedAt: submittedAt,
+  });
+
   const saveResult = await withDatabase(async (database) => {
     const businessIndex = findBusinessIndex(database.businesses, answers);
     const previousBusiness = businessIndex >= 0 ? database.businesses[businessIndex] : null;
     const businessId = previousBusiness?.id || crypto.randomUUID();
-    const businessRecord = {
-      id: businessId,
-      name: normalize(answers["Business name"]),
-      website: normalize(answers.Website),
-      email: normalize(answers.Email),
-      followUpStatus: normalize(answers["Follow-up permission"]) || "permission blank",
-      currentAiUse: answerList(answers, "Current AI use"),
-      mainPainPoint: answerList(answers, "Main pain point"),
-      desiredAiPossibility: answerList(answers, "Desired AI possibility"),
-      latestResponseId: responseId,
-      updatedAt: submittedAt,
-      createdAt: previousBusiness?.createdAt || submittedAt,
+    const businessRecord = buildBusinessRecord({
+      previousBusiness,
+      businessId,
+      answers,
+      responseId,
       source: "survey",
-      slug: previousBusiness?.slug || slugify(normalize(answers["Business name"]) || normalize(answers.Website) || businessId),
-    };
+      submittedAt,
+      testSubmission,
+      submissionTag,
+    });
 
     if (businessIndex >= 0) {
       database.businesses[businessIndex] = {
@@ -300,7 +620,9 @@ const upsertSurveyResponse = async (payload, request) => {
       id: responseId,
       businessId,
       answers,
-      source: normalize(payload.source) || "survey",
+      source,
+      testSubmission: testSubmission ? "Yes" : "No",
+      submissionTag,
       userAgent: request.headers["user-agent"] || "",
       ip: request.headers["x-forwarded-for"] || request.socket.remoteAddress || "",
       updatedAt: submittedAt,
@@ -334,9 +656,93 @@ const upsertSurveyResponse = async (payload, request) => {
     database.notifications.push(notificationRecord);
   });
 
+  const sheetSyncRecord = await syncSpreadsheet({
+    responseRecord: saveResult.responseRecord,
+    businessRecord: saveResult.businessRecord,
+  });
+
+  await withDatabase(async (database) => {
+    database.sheetSyncs.push(sheetSyncRecord);
+  });
+
   return {
     ...saveResult,
     notificationRecord,
+    sheetSyncRecord,
+  };
+};
+
+const markBusinessDoNotSolicit = async (payload, request) => {
+  const markedAt = nowIso();
+  const source = normalize(payload.source) || "do-not-solicit";
+  const answers = normalizeSubmissionAnswers({
+    ...payload.answers,
+    "Follow-up permission": "Do not solicit",
+  }, source);
+  const testSubmission = isTestSubmission(answers, source);
+  const submissionTag = testSubmission ? "test" : "live";
+  const reason = normalize(payload.reason) || normalize(answers["Do not solicit reason"]) || "Declined survey";
+
+  await appendCaptureLog({
+    id: crypto.randomUUID(),
+    source,
+    submissionTag,
+    testSubmission,
+    answers,
+    outcome: "do_not_solicit",
+    reason,
+    userAgent: request.headers["user-agent"] || "",
+    ip: request.headers["x-forwarded-for"] || request.socket.remoteAddress || "",
+    receivedAt: markedAt,
+  });
+
+  const saveResult = await withDatabase(async (database) => {
+    const businessIndex = findBusinessIndex(database.businesses, answers);
+    const previousBusiness = businessIndex >= 0 ? database.businesses[businessIndex] : null;
+    const businessId = previousBusiness?.id || crypto.randomUUID();
+    const businessRecord = buildBusinessRecord({
+      previousBusiness,
+      businessId,
+      answers,
+      source,
+      submittedAt: markedAt,
+      testSubmission,
+      submissionTag,
+      overrides: {
+        followUpStatus: "do not solicit",
+        solicitationStatus: "do_not_solicit",
+        doNotSolicit: "Yes",
+        doNotSolicitAt: markedAt,
+        doNotSolicitReason: reason,
+      },
+    });
+
+    if (businessIndex >= 0) {
+      database.businesses[businessIndex] = {
+        ...previousBusiness,
+        ...businessRecord,
+      };
+    } else {
+      database.businesses.push(businessRecord);
+    }
+
+    return {
+      businessRecord: database.businesses.find((business) => business.id === businessId),
+      created: businessIndex < 0,
+    };
+  });
+
+  const sheetSyncRecord = await syncBusinessSpreadsheet({
+    businessRecord: saveResult.businessRecord,
+  });
+
+  await withDatabase(async (database) => {
+    database.sheetSyncs.push(sheetSyncRecord);
+  });
+
+  return {
+    ...saveResult,
+    sheetSyncRecord,
   };
 };
 
@@ -361,6 +767,15 @@ const handleRequest = async (request, response) => {
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/maps/config") {
+    sendJson(response, 200, {
+      ok: true,
+      googleMapsEnabled: Boolean(GOOGLE_MAPS_BROWSER_KEY),
+      googleMapsBrowserKey: GOOGLE_MAPS_BROWSER_KEY,
+    });
+    return;
+  }
+
   if (request.method === "POST" && url.pathname === "/api/survey-responses") {
     const payload = await readRequestJson(request);
     const validationError = validateSurveyPayload(payload);
@@ -374,12 +789,38 @@ const handleRequest = async (request, response) => {
     }
 
     const result = await upsertSurveyResponse(payload, request);
-    sendJson(response, result.created ? 201 : 200, {
+    sendJson(response, 200, {
       ok: true,
       responseId: result.responseRecord.id,
       businessId: result.businessRecord.id,
       notificationStatus: result.notificationRecord.status,
+      sheetSyncStatus: result.sheetSyncRecord.status,
       savedAt: result.responseRecord.updatedAt,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/businesses/do-not-solicit") {
+    const payload = await readRequestJson(request);
+    const validationError = validateBusinessMarkerPayload(payload);
+
+    if (validationError) {
+      sendJson(response, 400, {
+        ok: false,
+        error: validationError,
+      });
+      return;
+    }
+
+    const result = await markBusinessDoNotSolicit(payload, request);
+    sendJson(response, 200, {
+      ok: true,
+      businessId: result.businessRecord.id,
+      created: result.created,
+      doNotSolicit: result.businessRecord.doNotSolicit,
+      solicitationStatus: result.businessRecord.solicitationStatus,
+      sheetSyncStatus: result.sheetSyncRecord.status,
+      savedAt: result.businessRecord.updatedAt,
     });
     return;
   }
@@ -395,14 +836,20 @@ const handleRequest = async (request, response) => {
       ok: true,
       surveyResponses: database.surveyResponses,
       businesses: database.businesses,
+      sheetSyncs: database.sheetSyncs,
     });
     return;
   }
 
-  sendJson(response, 404, {
-    ok: false,
-    error: "Not found.",
-  });
+  if (url.pathname.startsWith("/api/")) {
+    sendJson(response, 404, {
+      ok: false,
+      error: "Not found.",
+    });
+    return;
+  }
+
+  await sendStatic(request, response, url.pathname);
 };
 
 const server = http.createServer((request, response) => {
@@ -412,6 +859,7 @@ const server = http.createServer((request, response) => {
       ok: false,
       error: statusCode === 500 ? "Internal server error." : error.message,
     });
+
     console.error(error);
   });
 });

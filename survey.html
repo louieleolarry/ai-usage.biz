@@ -26,7 +26,7 @@
     <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/assets/brand/favicon-32.png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
-    <link rel="stylesheet" href="/styles.css?v=20260627-nav-states">
+    <link rel="stylesheet" href="/styles.css?v=20260718-optout-other">
     <script defer src="/city-config.js?v=20260627-anchor-nav"></script>
   </head>
   <body>
@@ -84,6 +84,46 @@
 
         <form class="survey-form" data-survey-form>
           <input name="Response ID" type="hidden" data-response-id>
+          <fieldset class="geo-identifier" data-geo-identifier>
+            <legend>Business geo-identifier</legend>
+            <input name="Google Place ID" type="hidden" data-geo-place-id>
+            <input name="Google Maps URL" type="hidden" data-geo-maps-url>
+            <input name="Business address" type="hidden" data-geo-address>
+            <input name="Business latitude" type="hidden" data-geo-latitude>
+            <input name="Business longitude" type="hidden" data-geo-longitude>
+            <input name="Location accuracy" type="hidden" data-geo-accuracy>
+            <input name="Business distance meters" type="hidden" data-geo-distance>
+            <input name="Location source" type="hidden" data-geo-source>
+            <input name="Location label" type="hidden" data-geo-label>
+            <input name="Location confirmed" type="hidden" value="No" data-geo-confirmed>
+            <div class="geo-intro">
+              <div>
+                <span class="label-text">Confirm where you are before walking in</span>
+                <span class="label-hint">Starts with a general map estimate, then uses precise location when available to suggest the nearest Google Maps business.</span>
+              </div>
+              <button class="button primary" type="button" data-geo-find>Use precise location</button>
+            </div>
+            <div class="geo-map-shell">
+              <div class="geo-map" data-geo-map>
+                <div class="geo-map-fallback">
+                  <strong>Business area map</strong>
+                  <span>Loading general-area estimate...</span>
+                </div>
+              </div>
+              <div class="geo-map-meta">
+                <span data-geo-source-label>General estimate</span>
+                <span hidden data-geo-coordinate-label></span>
+                <span data-geo-radius-label>Waiting for map</span>
+              </div>
+            </div>
+            <p class="geo-status" data-geo-status aria-live="polite"></p>
+            <div class="geo-results" data-geo-results></div>
+            <div class="geo-confirmed-card" hidden data-geo-confirmed-card>
+              <span class="geo-confirmed-label">Confirmed business</span>
+              <strong data-geo-confirmed-name></strong>
+              <span data-geo-confirmed-address></span>
+            </div>
+          </fieldset>
           <fieldset>
             <legend>Contact basics</legend>
             <div class="form-grid">
@@ -98,6 +138,13 @@
               <label class="full-span">
                 <span class="label-text">Best contact email</span>
                 <input name="Email" type="email" autocomplete="email">
+              </label>
+              <label class="test-submission-toggle full-span" data-test-submission-control>
+                <input name="Test submission" type="checkbox" value="Yes" checked>
+                <span>
+                  <span class="label-text">Mark this as a test submission</span>
+                  <span class="label-hint">Leave this checked while testing so saved rows can be filtered out later.</span>
+                </span>
               </label>
               <div class="snapshot-role-row full-span">
                 <label>
@@ -156,11 +203,16 @@
                 <label><input name="Current AI use" type="checkbox" value="Chatbots"> Chatbots</label>
                 <label><input name="Current AI use" type="checkbox" value="Scheduling tools"> Scheduling tools</label>
                 <label><input name="Current AI use" type="checkbox" value="No current use"> No current use</label>
+                <label><input name="Current AI use" type="checkbox" value="Other" data-other-toggle aria-controls="current-ai-use-other" aria-expanded="false"> Other</label>
               </div>
-              <label class="custom-answer">
-                <span class="label-text">Custom answer</span>
-                <textarea name="Current AI use - Custom" data-custom-choice placeholder="Add another tool or a plain-English note."></textarea>
-              </label>
+              <div class="custom-answer-drawer" id="current-ai-use-other" data-other-drawer aria-hidden="true">
+                <div class="custom-answer-drawer-inner">
+                  <label class="custom-answer">
+                    <span class="label-text">Other answer</span>
+                    <textarea name="Current AI use - Custom" data-custom-choice placeholder="Add another tool or a plain-English note." disabled></textarea>
+                  </label>
+                </div>
+              </div>
               <p class="choice-error" data-choice-error aria-live="polite"></p>
             </div>
             <div class="question-group" data-required-choice data-question-title="Main pain point">
@@ -177,11 +229,16 @@
                 <label><input name="Main pain point" type="checkbox" value="Reviews"> Reviews</label>
                 <label><input name="Main pain point" type="checkbox" value="Quotes"> Quotes</label>
                 <label><input name="Main pain point" type="checkbox" value="Reporting"> Reporting</label>
+                <label><input name="Main pain point" type="checkbox" value="Other" data-other-toggle aria-controls="main-pain-point-other" aria-expanded="false"> Other</label>
               </div>
-              <label class="custom-answer">
-                <span class="label-text">Custom answer</span>
-                <textarea name="Main pain point - Custom" data-custom-choice placeholder="Add another pain point or context."></textarea>
-              </label>
+              <div class="custom-answer-drawer" id="main-pain-point-other" data-other-drawer aria-hidden="true">
+                <div class="custom-answer-drawer-inner">
+                  <label class="custom-answer">
+                    <span class="label-text">Other answer</span>
+                    <textarea name="Main pain point - Custom" data-custom-choice placeholder="Add another pain point or context." disabled></textarea>
+                  </label>
+                </div>
+              </div>
               <p class="choice-error" data-choice-error aria-live="polite"></p>
             </div>
             <div class="question-group" data-required-choice data-question-title="Desired AI possibility">
@@ -194,11 +251,16 @@
                 <label><input name="Desired AI possibility" type="checkbox" value="Customer calls"> Customer calls</label>
                 <label><input name="Desired AI possibility" type="checkbox" value="Appointment reminders"> Appointment reminders</label>
                 <label><input name="Desired AI possibility" type="checkbox" value="Review requests"> Review requests</label>
+                <label><input name="Desired AI possibility" type="checkbox" value="Other" data-other-toggle aria-controls="desired-ai-possibility-other" aria-expanded="false"> Other</label>
               </div>
-              <label class="custom-answer">
-                <span class="label-text">Custom answer</span>
-                <textarea name="Desired AI possibility - Custom" data-custom-choice placeholder="Add another possible AI fix."></textarea>
-              </label>
+              <div class="custom-answer-drawer" id="desired-ai-possibility-other" data-other-drawer aria-hidden="true">
+                <div class="custom-answer-drawer-inner">
+                  <label class="custom-answer">
+                    <span class="label-text">Other answer</span>
+                    <textarea name="Desired AI possibility - Custom" data-custom-choice placeholder="Add another possible AI fix." disabled></textarea>
+                  </label>
+                </div>
+              </div>
               <p class="choice-error" data-choice-error aria-live="polite"></p>
             </div>
           </fieldset>
@@ -259,6 +321,7 @@
           <div class="survey-actions">
             <button class="button primary" type="submit" data-submit-survey data-default-label="Submit">Submit</button>
             <button class="button secondary" type="button" data-copy-responses>Copy</button>
+            <button class="button danger" type="button" data-do-not-solicit data-default-label="Do not solicit">Do not solicit</button>
             <p class="copy-status" data-response-copy-status aria-live="polite"></p>
             <p class="submit-status" data-submit-status aria-live="polite"></p>
           </div>
@@ -270,6 +333,6 @@
       <span>AI Usage</span>
       <span>Practical AI systems for small business.</span>
     </footer>
-    <script src="/survey.js?v=20260628-email-submit"></script>
+    <script src="/survey.js?v=20260718-optout-other"></script>
   </body>
 </html>
